@@ -1,0 +1,38 @@
+{
+  "name": "j2c-converter",
+  "version": "1.0.0",
+  "description": "Convert online from style sheet to j2c object using j2c-importer",
+  "main": "index.js",
+  "scripts": {
+    "make": "browserify script/app.js -o app.js -s m_j2c",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mithriljs_cn",
+  "license": "MIT",
+  "dependencies": {
+    "j2c": "^0.8.3",
+    "j2c-importer": "^0.2.6",
+    "lodash.merge": "^3.3.2",
+    "mithril": "^0.2.2-rc.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.4.0",
+    "babel-loader": "^6.2.1",
+    "babel-preset-es2015": "^6.3.13",
+    "del": "^2.2.0",
+    "webpack": "^1.12.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mithriljs-cn/j2c-converter.git"
+  },
+  "keywords": [
+    "j2c",
+    "css",
+    "mithril"
+  ],
+  "bugs": {
+    "url": "https://github.com/mithriljs-cn/j2c-converter/issues"
+  },
+  "homepage": "https://github.com/mithriljs-cn/j2c-converter#readme"
+}

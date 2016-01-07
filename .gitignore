@@ -1,0 +1,4 @@
+node_modules
+compile*
+app.js
+gulp*
