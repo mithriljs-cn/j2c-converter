@@ -1,4 +1,3 @@
-
 var j2c = require('j2c')
 var importer = require('j2c-importer')
 var m = require('mithril')
@@ -27,6 +26,16 @@ function stylize(element, sheet){
     return element;
 }
 
+function addStyleToHead(styleObj){
+	if(!styleObj.dom){
+		var el = document.createElement('style')
+		document.head.appendChild(el)
+		styleObj.dom = el
+	}
+	styleObj.dom.setAttribute('data-version', 'head_'+styleObj.version)
+	stylize(styleObj.dom, styleObj.sheet)
+}
+
 var intervdom = function (sheet, vdom){
 	if(vdom.attrs&&vdom.attrs.className){
 		vdom.attrs.className = vdom.attrs.className.split(/\s+/).map(function(c){
@@ -46,10 +55,10 @@ var applyStyle = function(sheet, vdom){
 
 var j2cStore = {}
 function m_j2c(name, vdom) {
-	// usage: m_j2c() will return all j2cStore 
+	// usage: m_j2c() will return all j2cStore
 	if(!name) return j2cStore;
 	var styleObj = j2cStore[name]
-	// usage: m_j2c('name') will return all j2cStore['name'] 
+	// usage: m_j2c('name') will return all j2cStore['name']
 	if(!vdom) return styleObj;
 	// usage: m_j2c('name', mithril_v_dom) will add style to vdom and create <style> for it, cache style_dom
 	if( !styleObj || !styleObj.sheet ) return applyStyle({}, vdom);
@@ -67,32 +76,48 @@ function m_j2c(name, vdom) {
 }
 
 m_j2c.add = function( name, cssObj ) {
+	if(!name)return;
+	var styleObj
+	var isHead = name.indexOf('<head')===0;
 	if(!j2cStore[name]){
-		j2cStore[name] = { cssObj:cssObj, version:0, sheet:j2c.sheet(cssObj) };
+		styleObj = j2cStore[name] = { cssObj:cssObj, version:0, sheet:j2c.sheet(cssObj) };
 	} else {
-		var styleObj = j2cStore[name]
+		styleObj = j2cStore[name]
 		_merge( styleObj.cssObj, cssObj )
 		styleObj.sheet = j2c.sheet(styleObj.cssObj);
 		styleObj.version++
-		if( styleObj.dom ) m.redraw()
 	}
+	if( isHead ) addStyleToHead(styleObj)
+	else if( styleObj.dom ) m.redraw();
+
 	return j2cStore[name];
 }
 m_j2c.remove = function(name, cssObj) {
+	if(!name)return;
+	var isHead = name.indexOf('<head')===0;
 	var styleObj = j2cStore[name];
 	if(!cssObj){
 		delete j2cStore[name]
-		m.redraw()
 	}else{
 		_exclude(styleObj.cssObj, cssObj);
 		styleObj.sheet = j2c.sheet(styleObj.cssObj);
 		styleObj.version++
-		if( styleObj.dom ) m.redraw()
 	}
+	if( isHead ) {
+		cssObj
+		? addStyleToHead(styleObj)
+		: styleObj.dom&&styleObj.dom.parentNode.removeChild(styleObj.dom)
+	}
+	else if( styleObj.dom ) m.redraw();
+
 	return styleObj
 }
+
 window.mm = m_j2c;
 
+
+m_j2c.add( '<head abc>', {' body':{font_size:'10px', ' .text':{color:'red'} }} )
+m_j2c.add( '<head def>', {' body':{color:'red', ' .text':{color:'blue'} }  } )
 
 function Converter () {
 	var self = this;
@@ -133,8 +158,8 @@ function Converter () {
 		var dom = m_j2c('body_style',  [
 			m('div', [
 				m('span', 'Convert style sheet from left to right below:'),
-				m('select', 
-					{oninput:function(){ ctrl.options.case = this.value; ctrl.update() }}, 
+				m('select',
+					{oninput:function(){ ctrl.options.case = this.value; ctrl.update() }},
 					'camel|snake|dash'.split('|').map(function(v){ return m('option', {value:v, selected:v==ctrl.options.case?true:false }, v) })
 				),
 			]),
