@@ -13,6 +13,8 @@ function _exclude(source, dest){
 	});
 	return source;
 }
+// check if the given object is HTML element
+function isElement(o){return (typeof HTMLElement === "object" ? o instanceof HTMLElement :o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"); }
 
 function stylize(element, sheet){
     element.type = 'text/css';
@@ -57,6 +59,7 @@ var j2cStore = {}
 function m_j2c(name, vdom) {
 	// usage: m_j2c() will return all j2cStore
 	if(!name) return j2cStore;
+	if( isElement(name) ) return m_j2c.applyDom.apply(this, arguments);
 	var styleObj = j2cStore[name]
 	// usage: m_j2c('name') will return all j2cStore['name']
 	if(!vdom) return styleObj;
@@ -112,11 +115,35 @@ m_j2c.remove = function(name, cssObj) {
 
 	return styleObj
 }
+m_j2c.getClass = function (nameRegex){
+	var sheet, list = {}
+	for(var i in j2cStore){
+		// tutpoint: string.match(undefined) ?
+		if( (sheet=j2cStore[i].sheet) && i.match(nameRegex) ){
+			for(var name in sheet){ if(sheet.hasOwnProperty(name)&& !name.match(/^\d/) ) list[name]=sheet[name] }
+		}
+	}
+	// console.log(list)
+	return list;
+}
+m_j2c.applyClass = function (target, nameRegex){
+	var list = m_j2c.getClass(nameRegex)
+	var _addClassToDom = function(dom){
+		var c = dom.className&&dom.className.split(/\s+/)
+	    if(c) dom.className = c.map(function(v){ return list[v]||v }).join(' ')
+	}
+	if( !isElement(target) ) return;
+	_addClassToDom(target)
+	var items = target.getElementsByTagName("*")
+	for (var i = items.length; i--;) {
+	    _addClassToDom(items[i])
+	}
+}
 
 window.mm = m_j2c;
 
 
-m_j2c.add( '<head abc>', {' body':{font_size:'10px', ' .text':{color:'red'} }} )
+m_j2c.add( '<head abc>', {' body':{font_size:'10px', }} )
 m_j2c.add( '<head def>', {' body':{color:'red', ' .text':{color:'blue'} }  } )
 
 function Converter () {
@@ -156,7 +183,7 @@ function Converter () {
 	}
 	self.view = function(ctrl){
 		var dom = m_j2c('body_style',  [
-			m('div', [
+			m('div.global(text)', [
 				m('span', 'Convert style sheet from left to right below:'),
 				m('select',
 					{oninput:function(){ ctrl.options.case = this.value; ctrl.update() }},
